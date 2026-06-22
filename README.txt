@@ -1,23 +1,13 @@
 RCCG Middle East Convention 2026 - Attending Photo Frame App
 
-What this package does:
-- Lets people upload a photo
-- Offers automatic background removal in-browser (using the @imgly/background-removal package loaded from a CDN)
-- Lets people adjust zoom and position
-- Generates a downloadable PNG with the convention frame
+This fixed version:
+- Loads the app before loading the background-removal library
+- Allows photo upload even if background removal fails
+- Lets users zoom, move, and download the finished PNG
 
-How to use locally:
-1. Unzip the folder.
-2. Host it on a static server. Easiest options:
-   - Vercel
-   - Netlify
-   - GitHub Pages (if you keep the project public or use a proper deploy workflow)
-3. Open index.html through the deployed site.
-
-Important note:
-- Background removal relies on a browser-side CDN package. If you want stronger reliability and scale,
-  connect a server-side API such as Cloudinary, remove.bg, or another segmentation service.
-
-Recommended public URL examples:
-- convention.yourchurch.org/attending
-- rccg-middleeast-attending.vercel.app
+Files needed in GitHub:
+- index.html
+- styles.css
+- app.js
+- assets/frame_overlay.png
+- assets/frame_base.png

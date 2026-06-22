@@ -1,5 +1,3 @@
-import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm';
-
 const FRAME_W = 1122;
 const FRAME_H = 1402;
 const PHOTO_BOX = { x: 248, y: 228, w: 620, h: 620, r: 22 };
@@ -15,7 +13,7 @@ const statusEl = document.getElementById('status');
 const canvas = document.getElementById('previewCanvas');
 const ctx = canvas.getContext('2d');
 
-const frameOverlay = await loadImage('assets/frame_overlay.png');
+let frameOverlay = null;
 let originalImage = null;
 let activeImage = null;
 let activeObjectURL = null;
@@ -79,7 +77,9 @@ function drawComposite() {
     ctx.filter = 'none';
   }
 
-  ctx.drawImage(frameOverlay, 0, 0, FRAME_W, FRAME_H);
+  if (frameOverlay) {
+    ctx.drawImage(frameOverlay, 0, 0, FRAME_W, FRAME_H);
+  }
 }
 
 async function fileToImage(file) {
@@ -90,20 +90,25 @@ async function fileToImage(file) {
 
 async function runBackgroundRemoval() {
   if (!originalImage || !photoInput.files?.[0]) return;
-  setStatus('Removing background… this may take a few seconds.');
+
+  setStatus('Removing background… this may take a little while the first time.');
   removeBgBtn.disabled = true;
+
   try {
-    const blob = await removeBackground(photoInput.files[0]);
+    const module = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm');
+    const blob = await module.removeBackground(photoInput.files[0]);
+
     if (activeObjectURL) URL.revokeObjectURL(activeObjectURL);
     activeObjectURL = URL.createObjectURL(blob);
     activeImage = await loadImage(activeObjectURL);
+
     drawComposite();
-    setStatus('Background removed. You can now adjust and download.');
+    setStatus('Background removed. Adjust the photo, then download.');
   } catch (err) {
     console.error(err);
     activeImage = originalImage;
     drawComposite();
-    setStatus('Background removal failed in this browser. You can still use the original photo or connect a server API after deployment.');
+    setStatus('Auto background removal did not finish in this browser. Your photo is still loaded; use the original photo or try Chrome with stronger internet.');
   } finally {
     removeBgBtn.disabled = false;
   }
@@ -112,20 +117,37 @@ async function runBackgroundRemoval() {
 photoInput.addEventListener('change', async (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    setStatus('Please upload an image file.');
+    return;
+  }
+
   setStatus('Loading your photo…');
-  originalImage = await fileToImage(file);
-  activeImage = originalImage;
-  scaleRange.value = 100;
-  xRange.value = 0;
-  yRange.value = 0;
-  drawComposite();
-  removeBgBtn.disabled = false;
-  useOriginalBtn.disabled = false;
-  downloadBtn.disabled = false;
-  setStatus('Photo loaded. Click “Auto remove background” or download as is.');
+
+  try {
+    originalImage = await fileToImage(file);
+    activeImage = originalImage;
+
+    scaleRange.value = 100;
+    xRange.value = 0;
+    yRange.value = 0;
+
+    drawComposite();
+
+    removeBgBtn.disabled = false;
+    useOriginalBtn.disabled = false;
+    downloadBtn.disabled = false;
+
+    setStatus('Photo loaded. You can download now, or try Auto remove background.');
+  } catch (err) {
+    console.error(err);
+    setStatus('The photo did not load. Try a smaller JPG or PNG image.');
+  }
 });
 
 removeBgBtn.addEventListener('click', runBackgroundRemoval);
+
 useOriginalBtn.addEventListener('click', () => {
   if (!originalImage) return;
   activeImage = originalImage;
@@ -143,4 +165,13 @@ downloadBtn.addEventListener('click', () => {
   a.click();
 });
 
-drawComposite();
+(async function init() {
+  try {
+    frameOverlay = await loadImage('assets/frame_overlay.png');
+    drawComposite();
+    setStatus('Upload a picture to begin.');
+  } catch (err) {
+    console.error(err);
+    setStatus('Frame asset could not load. Make sure the assets folder uploaded correctly.');
+  }
+})();
