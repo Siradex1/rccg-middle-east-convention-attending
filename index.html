@@ -10,17 +10,17 @@
   <div class="wrap">
     <header>
       <h1>RCCG Middle East Convention 2026</h1>
-      <p>Create your “I will be attending” photo instantly.</p>
+      <p>Create your “I will be attending” photo frame.</p>
     </header>
 
     <main class="grid">
       <section class="card controls">
         <label class="upload">
-          <span>Upload your photo</span>
+          <span>1. Upload your photo</span>
           <input type="file" id="photoInput" accept="image/*" />
         </label>
 
-        <button id="removeBgBtn" class="primary" disabled>Auto remove background</button>
+        <button id="removeBgBtn" class="primary" disabled>2. Remove background</button>
         <button id="useOriginalBtn" class="secondary" disabled>Use original photo</button>
 
         <div class="control-group">
@@ -36,7 +36,7 @@
           <input type="range" id="yRange" min="-300" max="300" value="0" />
         </div>
 
-        <button id="downloadBtn" class="download" disabled>Download PNG</button>
+        <button id="downloadBtn" class="download" disabled>3. Download PNG</button>
         <p id="status" class="status">Loading frame…</p>
       </section>
 
@@ -46,6 +46,6 @@
     </main>
   </div>
 
-  <script type="module" src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

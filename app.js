@@ -17,6 +17,7 @@ let frameOverlay = null;
 let originalImage = null;
 let activeImage = null;
 let activeObjectURL = null;
+let originalFile = null;
 
 function setStatus(msg) {
   statusEl.textContent = msg;
@@ -88,27 +89,58 @@ async function fileToImage(file) {
   return await loadImage(activeObjectURL);
 }
 
-async function runBackgroundRemoval() {
-  if (!originalImage || !photoInput.files?.[0]) return;
+function imageToReducedDataURL(image, maxSide = 1600) {
+  const ratio = image.width / image.height;
+  let w = image.width;
+  let h = image.height;
 
-  setStatus('Removing background… this may take a little while the first time.');
+  if (Math.max(w, h) > maxSide) {
+    if (w > h) {
+      w = maxSide;
+      h = Math.round(maxSide / ratio);
+    } else {
+      h = maxSide;
+      w = Math.round(maxSide * ratio);
+    }
+  }
+
+  const temp = document.createElement('canvas');
+  temp.width = w;
+  temp.height = h;
+  const tctx = temp.getContext('2d');
+  tctx.drawImage(image, 0, 0, w, h);
+  return temp.toDataURL('image/jpeg', 0.9);
+}
+
+async function runBackgroundRemoval() {
+  if (!originalImage || !originalFile) return;
+
+  setStatus('Removing background… please wait until it says completed.');
   removeBgBtn.disabled = true;
 
   try {
-    const module = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm');
-    const blob = await module.removeBackground(photoInput.files[0]);
+    const imageData = imageToReducedDataURL(originalImage);
 
-    if (activeObjectURL) URL.revokeObjectURL(activeObjectURL);
-    activeObjectURL = URL.createObjectURL(blob);
-    activeImage = await loadImage(activeObjectURL);
+    const response = await fetch('/api/remove-bg', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageData })
+    });
 
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Background removal failed.');
+    }
+
+    activeImage = await loadImage(result.imageData);
     drawComposite();
     setStatus('Background removed. Adjust the photo, then download.');
   } catch (err) {
     console.error(err);
     activeImage = originalImage;
     drawComposite();
-    setStatus('Auto background removal did not finish in this browser. Your photo is still loaded; use the original photo or try Chrome with stronger internet.');
+    setStatus(err.message || 'Background removal failed. Check your Vercel REMOVE_BG_API_KEY setting.');
   } finally {
     removeBgBtn.disabled = false;
   }
@@ -126,6 +158,7 @@ photoInput.addEventListener('change', async (e) => {
   setStatus('Loading your photo…');
 
   try {
+    originalFile = file;
     originalImage = await fileToImage(file);
     activeImage = originalImage;
 
@@ -139,7 +172,7 @@ photoInput.addEventListener('change', async (e) => {
     useOriginalBtn.disabled = false;
     downloadBtn.disabled = false;
 
-    setStatus('Photo loaded. You can download now, or try Auto remove background.');
+    setStatus('Photo loaded. Click “Remove background” and wait before downloading.');
   } catch (err) {
     console.error(err);
     setStatus('The photo did not load. Try a smaller JPG or PNG image.');
