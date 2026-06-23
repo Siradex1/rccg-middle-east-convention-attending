@@ -12,40 +12,20 @@
       <h1>RCCG Middle East Convention 2026</h1>
       <p>Create your “I will be attending” photo frame.</p>
     </header>
-
     <main class="grid">
       <section class="card controls">
-        <label class="upload">
-          <span>1. Upload your photo</span>
-          <input type="file" id="photoInput" accept="image/*" />
-        </label>
-
+        <label class="upload"><span>1. Upload your photo</span><input type="file" id="photoInput" accept="image/*" /></label>
         <button id="removeBgBtn" class="primary" disabled>2. Remove background</button>
         <button id="useOriginalBtn" class="secondary" disabled>Use original photo</button>
-
-        <div class="control-group">
-          <label for="scaleRange">Zoom</label>
-          <input type="range" id="scaleRange" min="60" max="180" value="100" />
-        </div>
-        <div class="control-group">
-          <label for="xRange">Move left / right</label>
-          <input type="range" id="xRange" min="-250" max="250" value="0" />
-        </div>
-        <div class="control-group">
-          <label for="yRange">Move up / down</label>
-          <input type="range" id="yRange" min="-300" max="300" value="0" />
-        </div>
-
+        <div class="control-group"><label for="scaleRange">Zoom</label><input type="range" id="scaleRange" min="60" max="180" value="100" /></div>
+        <div class="control-group"><label for="xRange">Move left / right</label><input type="range" id="xRange" min="-250" max="250" value="0" /></div>
+        <div class="control-group"><label for="yRange">Move up / down</label><input type="range" id="yRange" min="-300" max="300" value="0" /></div>
         <button id="downloadBtn" class="download" disabled>3. Download PNG</button>
         <p id="status" class="status">Loading frame…</p>
       </section>
-
-      <section class="card preview-panel">
-        <canvas id="previewCanvas" width="1122" height="1402"></canvas>
-      </section>
+      <section class="card preview-panel"><div><canvas id="previewCanvas" width="1122" height="1402"></canvas><p class="mobile-preview-note">Preview stays here while you edit below.</p></div></section>
     </main>
   </div>
-
   <script src="app.js"></script>
 </body>
 </html>
