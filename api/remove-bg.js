@@ -1,37 +1,24 @@
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
+  res.setHeader('Content-Type', 'application/json');
+
   if (req.method !== 'POST') {
-    res.statusCode = 405;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Method not allowed.' }));
-    return;
+    return res.status(405).json({ error: 'Method not allowed.' });
   }
 
   if (!process.env.REMOVE_BG_API_KEY) {
-    res.statusCode = 500;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'REMOVE_BG_API_KEY is missing in Vercel Environment Variables.' }));
-    return;
+    return res.status(500).json({ error: 'REMOVE_BG_API_KEY is missing in Vercel Environment Variables.' });
   }
 
   try {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const raw = Buffer.concat(chunks).toString('utf8');
-    const body = JSON.parse(raw);
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
 
-    if (!body.imageData || !body.imageData.startsWith('data:image/')) {
-      res.statusCode = 400;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ error: 'No image data received.' }));
-      return;
+    if (!body || !body.imageData || !body.imageData.startsWith('data:image/')) {
+      return res.status(400).json({ error: 'No image data received.' });
     }
 
     const match = body.imageData.match(/^data:(image\/[^;]+);base64,(.+)$/);
     if (!match) {
-      res.statusCode = 400;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ error: 'Invalid image format.' }));
-      return;
+      return res.status(400).json({ error: 'Invalid image format.' });
     }
 
     const mimeType = match[1];
@@ -45,30 +32,27 @@ module.exports = async function handler(req, res) {
 
     const apiResponse = await fetch('https://api.remove.bg/v1.0/removebg', {
       method: 'POST',
-      headers: {
-        'X-Api-Key': process.env.REMOVE_BG_API_KEY
-      },
+      headers: { 'X-Api-Key': process.env.REMOVE_BG_API_KEY },
       body: form
     });
 
     if (!apiResponse.ok) {
       const errorText = await apiResponse.text();
-      res.statusCode = apiResponse.status;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ error: `remove.bg error: ${errorText.slice(0, 300)}` }));
-      return;
+      return res.status(apiResponse.status).json({
+        error: `remove.bg error: ${errorText.slice(0, 300)}`
+      });
     }
 
     const arrayBuffer = await apiResponse.arrayBuffer();
     const output = Buffer.from(arrayBuffer).toString('base64');
 
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ imageData: `data:image/png;base64,${output}` }));
+    return res.status(200).json({
+      imageData: `data:image/png;base64,${output}`
+    });
   } catch (error) {
     console.error(error);
-    res.statusCode = 500;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Server background removal failed. Check Vercel logs.' }));
+    return res.status(500).json({
+      error: error.message || 'Server background removal failed.'
+    });
   }
-};
+}
